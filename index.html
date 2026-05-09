@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🀄 麻將計分板</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+ font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',sans-serif;
+ background:#1a1a2e;color:#eee;min-height:100vh;padding:16px
+}
+.card{
+ background:#16213e;border-radius:16px;padding:20px;margin-bottom:16px;
+ border:1px solid #0f3460
+}
+.title{font-size:24px;font-weight:bold;text-align:center;margin-bottom:20px}
+.title span{color:#e94560}
+
+/* 登入 */
+.login{display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;min-height:80vh}
+.login input{
+ width:100%;max-width:300px;padding:14px;border-radius:12px;border:2px solid #0f3460;
+ background:#1a1a2e;color:#fff;font-size:18px;text-align:center
+}
+.login input:focus{outline:none;border-color:#e94560}
+.login button{
+ width:100%;max-width:300px;padding:14px;border-radius:12px;border:none;
+ background:linear-gradient(135deg,#e94560,#0f3460);color:#fff;font-size:18px;font-weight:bold;cursor:pointer
+}
+
+/* 主畫面 */
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.header .name{font-size:18px;font-weight:bold}
+.header .date{font-size:14px;color:#888}
+.logout{background:#333;border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer}
+
+/* 分數輸入 - 簡化版 */
+.quick-btns{
+ display:flex;gap:12px;margin-bottom:12px
+}
+.quick-btn{
+ flex:1;padding:20px;border-radius:12px;border:2px solid;
+ font-size:20px;font-weight:bold;cursor:pointer;text-align:center
+}
+.quick-btn.win{
+ background:rgba(74,222,128,0.2);border-color:#4ade80;color:#4ade80
+}
+.quick-btn.win.active{
+ background:#4ade80;color:#000
+}
+.quick-btn.lose{
+ background:rgba(248,113,113,0.2);border-color:#f87171;color:#f87171
+}
+.quick-btn.lose.active{
+ background:#f87171;color:#fff
+}
+.score-input{
+ display:flex;gap:10px;margin-bottom:16px
+}
+.score-input input{
+ flex:1;padding:16px;border-radius:12px;border:2px solid #0f3460;
+ background:#1a1a2e;color:#fff;font-size:24px;text-align:center;font-weight:bold
+}
+.score-input button{
+ padding:16px 20px;border-radius:12px;border:none;
+ background:#e94560;color:#fff;font-size:16px;font-weight:bold;cursor:pointer
+}
+
+/* 我的分數 */
+.my-score{
+ text-align:center;padding:20px;
+ background:linear-gradient(135deg,#0f3460,#16213e);border-radius:16px;margin-bottom:16px
+}
+.my-score .label{font-size:14px;color:#888;margin-bottom:8px}
+.my-score .amount{font-size:48px;font-weight:bold}
+.my-score .amount.win{color:#4ade80}
+.my-score .amount.lose{color:#f87171}
+.my-score .hint{font-size:12px;color:#666;margin-top:8px}
+
+/* 排行榜 */
+.leaderboard{}
+.leaderboard .title{font-size:16px;color:#888;text-align:left;margin-bottom:12px}
+.row{
+ display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;
+ margin-bottom:8px;background:#16213e
+}
+.row.highlight{border:2px solid #e94560}
+.row .rank{
+ width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-weight:bold;font-size:14px
+}
+.row .rank.gold{background:linear-gradient(135deg,#ffd700,#ff8c00)}
+.row .rank.silver{background:linear-gradient(135deg,#c0c0c0,#888)}
+.row .rank.bronze{background:linear-gradient(135deg,#cd7f32,#8b4513)}
+.row .rank.normal{background:#333;color:#888}
+.row .name{flex:1;font-size:16px;font-weight:bold}
+.row .score{font-size:18px;font-weight:bold}
+.row .score.win{color:#4ade80}
+.row .score.lose{color:#f87171}
+.row .score.zero{color:#888}
+.row .you{font-size:11px;color:#e94560;margin-left:4px}
+
+/* 提示 */
+.hint{text-align:center;color:#666;font-size:13px;margin-top:16px}
+.hint.red{color:#e94560}
+
+/* 切換 */
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{
+ flex:1;padding:12px;border-radius:12px;border:2px solid #0f3460;
+ background:#1a1a2e;color:#888;text-align:center;cursor:pointer;font-weight:bold
+}
+.tab.active{background:#e94560;color:#fff;border-color:#e94560}
+
+/* 歷史 */
+.history-item{
+ padding:12px;border-radius:12px;margin-bottom:8px;background:#16213e
+}
+.history-item .date{font-size:13px;color:#888;margin-bottom:8px}
+.history-item .players{display:flex;flex-wrap:wrap;gap:6px}
+.history-item .player{
+ padding:4px 10px;border-radius:20px;background:#1a1a2e;font-size:13px
+}
+.history-item .player.win{color:#4ade80}
+.history-item .player.lose{color:#f87171}
+
+/* 設定提示 */
+.setup-hint{
+ text-align:center;padding:40px 20px;
+ background:#16213e;border-radius:16px;border:2px dashed #e94560
+}
+.setup-hint .icon{font-size:48px;margin-bottom:12px}
+.setup-hint .title{font-size:18px;font-weight:bold;color:#e94560;margin-bottom:8px}
+.setup-hint .text{color:#888;font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- 登入畫面 -->
+<div id="loginScreen" class="login">
+ <div style="font-size:64px">🀄</div>
+ <div class="title">麻將<span>計分板</span></div>
+ <input type="text" id="nameInput" placeholder="輸入你的名字" maxlength="8">
+ <button onclick="enterGame()">進入牌桌</button>
+ <p style="color:#666;font-size:13px;margin-top:20px">簡單、立即可用<br>支援多人即時同步</p>
+</div>
+
+<!-- 主畫面 -->
+<div id="mainScreen" style="display:none">
+ <div class="header">
+  <div>
+   <div class="name" id="displayName">玩家</div>
+   <div class="date" id="todayDate"></div>
+  </div>
+  <button class="logout" onclick="logout()">換人</button>
+ </div>
+
+ <!-- 今日戰況 -->
+ <div id="tabToday">
+  <div class="my-score">
+   <div class="label">我今日的輸贏</div>
+   <div class="amount" id="myAmount">$0</div>
+   <div class="hint">點 + 變成 - 就是輸錢</div>
+  </div>
+
+  <div class="quick-btns">
+   <button type="button" class="quick-btn win active" id="btnWin" onclick="setMode('win')">贏 💰</button>
+   <button type="button" class="quick-btn lose" id="btnLose" onclick="setMode('lose')">輸 💸</button>
+  </div>
+
+  <div class="score-input">
+   <input type="number" id="scoreInput" placeholder="輸入金額">
+   <button onclick="saveScore()">儲存</button>
+  </div>
+
+  <div class="leaderboard">
+   <div class="title">📊 今日排行榜</div>
+   <div id="leaderboardList"></div>
+  </div>
+
+  <div class="hint">
+   總計：<span id="totalAmount">$0</span>
+   <span id="totalHint" class="red"></span>
+  </div>
+ </div>
+
+ <!-- 歷史紀錄 -->
+ <div id="tabHistory" style="display:none">
+  <div class="tabs">
+   <div class="tab" onclick="showTab('today')">今日</div>
+   <div class="tab" onclick="loadHistory()">歷史</div>
+   <div class="tab" onclick="loadStats()">統計</div>
+  </div>
+  <div id="historyList"></div>
+  <div id="statsList" style="display:none"></div>
+ </div>
+</div>
+
+<script>
+// =====================================
+// 琪琪麻將計分板 - Supabase 版
+// =====================================
+
+const SUPABASE_URL = 'https://muzzgyewpekxjoyhcryv.supabase.co';
+const ANON_KEY = 'sb_publishable_wpxNtwAEXNjy2QF2iHgKrA_1F5Aod6i';
+const ROOM = 'main';
+
+let myName = '';
+let today = '';
+let todayData = {};
+let isWin = true; // true = win, false = lose
+let liveChannel = null;
+
+// 取得今天日期
+function getToday() {
+ const d = new Date();
+ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// 登入
+function enterGame() {
+ const name = document.getElementById('nameInput').value.trim();
+ if (!name) { alert('請輸入名字'); return; }
+ localStorage.setItem('mj_name', name);
+ myName = name;
+ today = getToday();
+ 
+ document.getElementById('loginScreen').style.display = 'none';
+ document.getElementById('mainScreen').style.display = 'block';
+ document.getElementById('displayName').textContent = name;
+ document.getElementById('todayDate').textContent = '今日：' + today;
+ 
+ loadToday();
+ subscribeUpdates();
+}
+
+// 載入今日資料
+async function loadToday() {
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/mahjong_scores?game_date=eq.${today}&room=eq.${ROOM}&select=*`, {
+ headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+ });
+ if (!res.ok) throw new Error('Network response was not ok');
+ const data = await res.json();
+ 
+ todayData = {};
+ for (const item of data) {
+ todayData[item.player_name] = item.score;
+ }
+ renderLeaderboard();
+ updateMyDisplay();
+ } catch (e) {
+ console.error('載入失敗:', e);
+ }
+}
+
+// 切換模式
+function setMode(mode) {
+ isWin = (mode === 'win');
+ const btnWin = document.getElementById('btnWin');
+ const btnLose = document.getElementById('btnLose');
+ if (isWin) {
+ btnWin.classList.add('active');
+ btnLose.classList.remove('active');
+ } else {
+ btnWin.classList.remove('active');
+ btnLose.classList.add('active');
+ }
+}
+
+// 儲存分數
+async function saveScore() {
+ const inputVal = document.getElementById('scoreInput').value.trim();
+ let val = parseInt(inputVal) || 0;
+ if (!isWin && val > 0) val = -val;
+ const name = myName;
+ 
+ try {
+ // 先刪除舊的
+ await fetch(`${SUPABASE_URL}/rest/v1/mahjong_scores?game_date=eq.${today}&room=eq.${ROOM}&player_name=eq.${encodeURIComponent(name)}`, {
+ method: 'DELETE',
+ headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+ });
+ 
+ // 新增新的
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/mahjong_scores`, {
+ method: 'POST',
+ headers: {
+ apikey: ANON_KEY,
+ Authorization: 'Bearer ' + ANON_KEY,
+ 'Content-Type': 'application/json',
+ 'Prefer': 'return=representation'
+ },
+ body: JSON.stringify({
+ player_name: name,
+ score: val,
+ game_date: today,
+ room: ROOM
+ })
+ });
+ 
+ if (!res.ok) throw new Error('儲存失敗');
+ document.getElementById('scoreInput').value = '';
+ todayData[name] = val;
+ renderLeaderboard();
+ updateMyDisplay();
+ } catch (e) {
+ console.error('儲存失敗:', e);
+ alert('儲存失敗，請稍後再試');
+ }
+}
+
+// 訂閱更新
+function subscribeUpdates() {
+ // 簡單輪詢，每3秒更新一次
+ setInterval(loadToday, 3000);
+}
+
+// 更新我的顯示
+function updateMyDisplay() {
+ const myScore = todayData[myName] || 0;
+ const el = document.getElementById('myAmount');
+ el.textContent = '$' + (myScore > 0 ? '+' : '') + myScore;
+ el.className = 'amount ' + (myScore > 0 ? 'win' : myScore < 0 ? 'lose' : '');
+}
+
+// 渲染排行榜
+function renderLeaderboard() {
+ const list = document.getElementById('leaderboardList');
+ const entries = Object.entries(todayData);
+ 
+ if (entries.length === 0) {
+ list.innerHTML = '<div style="text-align:center;color:#666;padding:20px">還沒有人輸入成績</div>';
+ document.getElementById('totalAmount').textContent = '$0';
+ document.getElementById('totalHint').textContent = '';
+ return;
+ }
+ 
+ // 排序
+ entries.sort((a, b) => b[1] - a[1]);
+ 
+ const medals = ['🥇','🥈','🥉'];
+ const rankClass = ['gold','silver','bronze'];
+ 
+ let html = '';
+ let total = 0;
+ 
+ entries.forEach(([name, score], i) => {
+ total += score;
+ const isMe = name === myName;
+ const rankClassName = i < 3 ? rankClass[i] : 'normal';
+ const scoreClass = score > 0 ? 'win' : score < 0 ? 'lose' : 'zero';
+ 
+ html += `<div class="row ${isMe ? 'highlight' : ''}">
+ <div class="rank ${rankClassName}">${i < 3 ? medals[i] : i+1}</div>
+ <div class="name">${name}${isMe ? '<span class="you">（我）</span>' : ''}</div>
+ <div class="score ${scoreClass}">$${score > 0 ? '+' : ''}${score}</div>
+ </div>`;
+ });
+ 
+ list.innerHTML = html;
+ 
+ // 總計
+ document.getElementById('totalAmount').textContent = '$' + (total > 0 ? '+' : '') + total;
+ document.getElementById('totalHint').textContent = total === 0 ? ' ✅ 零和' : ' ⚠️ 請確認';
+}
+
+// 歷史紀錄
+async function loadHistory() {
+ const tab = document.getElementById('tabHistory');
+ const todayTab = document.getElementById('tabToday');
+ todayTab.style.display = 'none';
+ tab.style.display = 'block';
+ document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+ event.target.classList.add('active');
+ 
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/mahjong_scores?room=eq.${ROOM}&select=*&order=game_date.desc&limit=30`, {
+ headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+ });
+ const data = await res.json();
+ 
+ // 按日期分組
+ const byDate = {};
+ for (const item of data) {
+ if (!byDate[item.game_date]) byDate[item.game_date] = [];
+ byDate[item.game_date].push(item);
+ }
+ 
+ let html = '';
+ for (const [date, players] of Object.entries(byDate)) {
+ players.sort((a, b) => b.score - a.score);
+ const chips = players.map(p => {
+ const cls = p.score > 0 ? 'win' : p.score < 0 ? 'lose' : '';
+ const me = p.player_name === myName ? ' 👈' : '';
+ return `<span class="player ${cls}">${p.player_name}${me} ${p.score > 0 ? '+' : ''}${p.score}</span>`;
+ }).join('');
+ 
+ html += `<div class="history-item">
+ <div class="date">${date}</div>
+ <div class="players">${chips}</div>
+ </div>`;
+ }
+ 
+ document.getElementById('historyList').innerHTML = html || '<div style="text-align:center;color:#666;padding:20px">尚無歷史紀錄</div>';
+ } catch (e) {
+ console.error('載入歷史失敗:', e);
+ }
+}
+
+// 統計表
+async function loadStats() {
+ const tab = document.getElementById('tabHistory');
+ const todayTab = document.getElementById('tabToday');
+ todayTab.style.display = 'none';
+ tab.style.display = 'block';
+ document.getElementById('historyList').style.display = 'none';
+ document.getElementById('statsList').style.display = 'block';
+ document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+ event.target.classList.add('active');
+
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/mahjong_scores?room=eq.${ROOM}&select=*&order=game_date`, {
+ headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+ });
+ const data = await res.json();
+
+ // 統計每個人
+ const stats = {};
+ for (const item of data) {
+ if (!stats[item.player_name]) {
+ stats[item.player_name] = { total: 0, games: 0, wins: 0, losses: 0 };
+ }
+ stats[item.player_name].total += item.score;
+ stats[item.player_name].games += 1;
+ if (item.score > 0) stats[item.player_name].wins += 1;
+ if (item.score < 0) stats[item.player_name].losses += 1;
+ }
+
+ const entries = Object.entries(stats).sort((a, b) => b[1].total - a[1].total);
+
+ let html = '<div style="margin-bottom:16px">';
+ html += '<div style="font-size:16px;font-weight:bold;margin-bottom:12px;color:#e94560">📊 統計表</div>';
+ html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px;font-size:12px;color:#888;text-align:center">';
+ html += '<div>玩家</div><div>總場次</div><div>勝/負</div><div>總分</div>';
+ html += '</div>';
+
+ for (const [name, s] of entries) {
+ const cls = s.total > 0 ? 'win' : s.total < 0 ? 'lose' : 'zero';
+ html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:10px;background:#16213e;border-radius:8px;margin-bottom:8px;text-align:center;font-size:14px">
+ <div style="font-weight:bold">${name}${name === myName ? '<span style="font-size:11px;color:#e94560">（我）</span>' : ''}</div>
+ <div>${s.games}</div>
+ <div><span style="color:#4ade80">${s.wins}</span>/<span style="color:#f87171">${s.losses}</span></div>
+ <div class="${cls}" style="font-weight:bold">${s.total > 0 ? '+' : ''}${s.total}</div>
+ </div>`;
+ }
+ html += '</div>';
+
+ document.getElementById('statsList').innerHTML = html;
+ } catch (e) {
+ console.error('載入統計失敗:', e);
+ }
+}
+
+// 切換分頁
+function showTab(tab) {
+ document.getElementById('tabToday').style.display = tab === 'today' ? 'block' : 'none';
+ document.getElementById('tabHistory').style.display = 'none';
+ document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+}
+
+// 登出
+function logout() {
+ localStorage.removeItem('mj_name');
+ location.reload();
+}
+
+// 初始化
+window.onload = function() {
+ const saved = localStorage.getItem('mj_name');
+ if (saved) {
+ document.getElementById('nameInput').value = saved;
+ //enterGame();
+ }
+ document.getElementById('todayDate').textContent = '今日：' + getToday();
+};
+</script>
+</body>
+</html>
